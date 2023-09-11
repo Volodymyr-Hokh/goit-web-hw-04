@@ -10,7 +10,7 @@ import urllib.parse
 
 SOCKET_IP = "127.0.0.1"
 SOCKET_PORT = 5000
-
+STORAGE_PATH = Path("storage")
 
 class HttpHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -57,14 +57,13 @@ class HttpHandler(BaseHTTPRequestHandler):
 def save_data(data):
     data_parse = urllib.parse.unquote_plus(data.decode())
 
-    data_path = Path("storage").joinpath("data.json")
-
-    with open(data_path, encoding="utf-8") as file:
-        try:
+    data_path = STORAGE_PATH.joinpath("data.json")
+    try:
+        with open(data_path, encoding="utf-8") as file:
             data_json = json.load(file)
-        except json.decoder.JSONDecodeError:
-            data_json = {}
-        data_json[str(datetime.now())] = {key: value for key, value in [el.split('=') for el in data_parse.split('&')]}
+    except FileNotFoundError:
+        data_json = {}
+    data_json[str(datetime.now())] = {key: value for key, value in [el.split('=') for el in data_parse.split('&')]}
 
     with open(data_path, "w", encoding="utf-8") as fh:
         json.dump(data_json, fh, indent=4, ensure_ascii=False)
@@ -101,6 +100,10 @@ def run_http_server(server_class=HTTPServer, handler_class=HttpHandler):
 
 
 if __name__ == '__main__':
+    print("Server started!")
+    if not STORAGE_PATH.exists():
+        STORAGE_PATH.mkdir()
+
     http_server_thread = Thread(target=run_http_server)
     http_server_thread.start()
 
